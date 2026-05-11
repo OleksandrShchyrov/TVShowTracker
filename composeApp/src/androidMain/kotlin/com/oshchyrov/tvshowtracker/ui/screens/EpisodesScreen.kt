@@ -1,13 +1,36 @@
 package com.oshchyrov.tvshowtracker.ui.screens
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -15,11 +38,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.oshchyrov.tvshowtracker.domain.model.AppLanguage
 import com.oshchyrov.tvshowtracker.domain.model.Episode
 import com.oshchyrov.tvshowtracker.domain.model.Season
 import com.oshchyrov.tvshowtracker.presentation.episodes.EpisodesIntent
 import com.oshchyrov.tvshowtracker.presentation.episodes.EpisodesViewModel
-import com.oshchyrov.tvshowtracker.presentation.settings.SettingsViewModel
+import com.oshchyrov.tvshowtracker.ui.localization.LocalAppLanguage
+import com.oshchyrov.tvshowtracker.ui.localization.localizedString
 import com.oshchyrov.tvshowtracker.util.Strings
 import org.koin.compose.koinInject
 
@@ -28,11 +53,9 @@ import org.koin.compose.koinInject
 fun EpisodesScreen(
     showId: Int,
     onBackClick: () -> Unit,
-    settingsViewModel: SettingsViewModel,
     viewModel: EpisodesViewModel = koinInject(),
 ) {
-    val settingsState by settingsViewModel.state.collectAsState()
-    val lang = settingsState.settings.language
+    val lang = LocalAppLanguage.current
 
     LaunchedEffect(showId) {
         viewModel.handleIntent(EpisodesIntent.LoadEpisodes(showId))
@@ -43,10 +66,13 @@ fun EpisodesScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(Strings.get("episodes", lang)) },
+                title = { Text(localizedString("episodes")) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = Strings.get("back", lang))
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = localizedString("back")
+                        )
                     }
                 }
             )
@@ -54,18 +80,26 @@ fun EpisodesScreen(
     ) { padding ->
         when {
             state.isLoading -> {
-                Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                Box(Modifier
+                    .fillMaxSize()
+                    .padding(padding), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
             }
+
             state.error != null -> {
-                Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                    Text("${Strings.get("error", lang)}: ${state.error}")
+                Box(Modifier
+                    .fillMaxSize()
+                    .padding(padding), contentAlignment = Alignment.Center) {
+                    Text("${localizedString("error")}: ${state.error}")
                 }
             }
+
             else -> {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(padding),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
@@ -76,7 +110,10 @@ fun EpisodesScreen(
                                 lang = lang,
                                 onToggle = { markWatched ->
                                     viewModel.handleIntent(
-                                        EpisodesIntent.ToggleSeasonWatched(season.number, markWatched)
+                                        EpisodesIntent.ToggleSeasonWatched(
+                                            season.number,
+                                            markWatched
+                                        )
                                     )
                                 }
                             )
@@ -106,14 +143,16 @@ fun EpisodesScreen(
 @Composable
 private fun SeasonHeader(
     season: Season,
-    lang: com.oshchyrov.tvshowtracker.domain.model.AppLanguage,
+    lang: AppLanguage,
     onToggle: (Boolean) -> Unit,
 ) {
     val allWatched = season.episodes.all { it.isWatched }
     val watchedCount = season.episodes.count { it.isWatched }
 
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -129,7 +168,12 @@ private fun SeasonHeader(
         )
         Spacer(Modifier.width(8.dp))
         TextButton(onClick = { onToggle(!allWatched) }) {
-            Text(if (allWatched) Strings.get("unwatch_all", lang) else Strings.get("watch_all", lang))
+            Text(
+                if (allWatched) Strings.get("unwatch_all", lang) else Strings.get(
+                    "watch_all",
+                    lang
+                )
+            )
         }
     }
 }
@@ -167,7 +211,11 @@ private fun EpisodeItem(episode: Episode, onToggleWatched: () -> Unit) {
                     fontWeight = FontWeight.Medium,
                 )
                 episode.airdate?.let {
-                    Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
             Checkbox(

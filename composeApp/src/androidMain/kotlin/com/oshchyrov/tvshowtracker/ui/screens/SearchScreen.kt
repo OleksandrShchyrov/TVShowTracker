@@ -1,14 +1,36 @@
 package com.oshchyrov.tvshowtracker.ui.screens
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -18,31 +40,34 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.oshchyrov.tvshowtracker.domain.model.Show
 import com.oshchyrov.tvshowtracker.presentation.search.SearchViewModel
-import com.oshchyrov.tvshowtracker.presentation.settings.SettingsViewModel
-import com.oshchyrov.tvshowtracker.util.Strings
+import com.oshchyrov.tvshowtracker.ui.localization.LocalAppLanguage
+import com.oshchyrov.tvshowtracker.ui.localization.localizedString
 import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
     onShowClick: (Int) -> Unit,
-    settingsViewModel: SettingsViewModel,
+    contentPadding: PaddingValues = PaddingValues(),
     viewModel: SearchViewModel = koinInject(),
 ) {
-    val settingsState by settingsViewModel.state.collectAsState()
-    val lang = settingsState.settings.language
+    val lang = LocalAppLanguage.current
     val state by viewModel.state.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.loadInitialShows()
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(contentPadding),
+    ) {
         TopAppBar(
             title = {
                 Text(
-                    if (state.isInitialContent) Strings.get("browse_shows", lang)
-                    else Strings.get("search_shows", lang)
+                    if (state.isInitialContent) localizedString("browse_shows")
+                    else localizedString("search_shows")
                 )
             }
         )
@@ -53,7 +78,7 @@ fun SearchScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
-            placeholder = { Text(Strings.get("search_placeholder", lang)) },
+            placeholder = { Text(localizedString("search_placeholder")) },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
             singleLine = true,
             shape = RoundedCornerShape(12.dp),
@@ -65,33 +90,43 @@ fun SearchScreen(
                     CircularProgressIndicator()
                 }
             }
+
             state.error != null -> {
                 Column(
                     Modifier.fillMaxSize(),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,
                 ) {
-                    Text("${Strings.get("error", lang)}: ${state.error}", style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        "${localizedString("error")}: ${state.error}",
+                        style = MaterialTheme.typography.bodyLarge
+                    )
                     Spacer(Modifier.height(16.dp))
                     Button(onClick = { viewModel.retrySearch() }) {
-                        Text(Strings.get("retry", lang))
+                        Text(localizedString("retry"))
                     }
                 }
             }
+
             state.isEmpty -> {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(Strings.get("no_shows_found", lang), style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        localizedString("no_shows_found"),
+                        style = MaterialTheme.typography.bodyLarge
+                    )
                 }
             }
+
             state.query.isBlank() && state.results.isEmpty() -> {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
-                        Strings.get("loading_shows", lang),
+                        localizedString("loading_shows"),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
+
             else -> {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
@@ -101,7 +136,7 @@ fun SearchScreen(
                     if (state.isInitialContent) {
                         item {
                             Text(
-                                text = Strings.get("popular_picks", lang),
+                                text = localizedString("popular_picks"),
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(bottom = 4.dp),

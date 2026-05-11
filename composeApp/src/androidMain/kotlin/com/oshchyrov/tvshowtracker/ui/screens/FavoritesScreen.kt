@@ -3,14 +3,39 @@ package com.oshchyrov.tvshowtracker.ui.screens
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -21,9 +46,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.oshchyrov.tvshowtracker.domain.model.AppLanguage
 import com.oshchyrov.tvshowtracker.domain.model.FavoriteShow
 import com.oshchyrov.tvshowtracker.presentation.favorites.FavoritesViewModel
-import com.oshchyrov.tvshowtracker.presentation.settings.SettingsViewModel
+import com.oshchyrov.tvshowtracker.ui.localization.LocalAppLanguage
+import com.oshchyrov.tvshowtracker.ui.localization.localizedString
 import com.oshchyrov.tvshowtracker.util.Strings
 import org.koin.compose.koinInject
 
@@ -31,11 +58,10 @@ import org.koin.compose.koinInject
 @Composable
 fun FavoritesScreen(
     onShowClick: (Int) -> Unit,
-    settingsViewModel: SettingsViewModel,
+    contentPadding: PaddingValues = PaddingValues(),
     viewModel: FavoritesViewModel = koinInject(),
 ) {
-    val settingsState by settingsViewModel.state.collectAsState()
-    val lang = settingsState.settings.language
+    val lang = LocalAppLanguage.current
 
     // Refresh data every time screen appears
     LaunchedEffect(Unit) {
@@ -56,8 +82,12 @@ fun FavoritesScreen(
 
     val state by viewModel.state.collectAsState()
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        TopAppBar(title = { Text(Strings.get("my_shows", lang)) })
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(contentPadding),
+    ) {
+        TopAppBar(title = { Text(localizedString("my_shows")) })
 
         when {
             state.isLoading -> {
@@ -65,22 +95,24 @@ fun FavoritesScreen(
                     CircularProgressIndicator()
                 }
             }
+
             state.isEmpty -> {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            Strings.get("no_saved_shows", lang),
+                            localizedString("no_saved_shows"),
                             style = MaterialTheme.typography.titleMedium,
                         )
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            Strings.get("add_shows_hint", lang),
+                            localizedString("add_shows_hint"),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
             }
+
             else -> {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
@@ -142,10 +174,12 @@ fun FavoritesScreen(
 private fun FavoriteShowItem(
     favorite: FavoriteShow,
     onClick: () -> Unit,
-    lang: com.oshchyrov.tvshowtracker.domain.model.AppLanguage,
+    lang: AppLanguage,
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
     ) {
         Row(modifier = Modifier.padding(12.dp)) {
@@ -169,18 +203,30 @@ private fun FavoriteShowItem(
                 Spacer(Modifier.height(4.dp))
                 LinearProgressIndicator(
                     progress = { favorite.progressPercentage },
-                    modifier = Modifier.fillMaxWidth().height(6.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(6.dp),
                     strokeCap = StrokeCap.Round,
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = "${favorite.watchedEpisodes}/${favorite.totalEpisodes} ${Strings.get("episodes_format", lang)} (${(favorite.progressPercentage * 100).toInt()}%)",
+                    text = "${favorite.watchedEpisodes}/${favorite.totalEpisodes} ${
+                        Strings.get(
+                            "episodes_format",
+                            lang
+                        )
+                    } (${(favorite.progressPercentage * 100).toInt()}%)",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 favorite.nextUnwatchedEpisode?.let { ep ->
                     Text(
-                        text = "${Strings.get("next", lang)}: S${ep.season}E${ep.number} - ${ep.name}",
+                        text = "${
+                            Strings.get(
+                                "next",
+                                lang
+                            )
+                        }: S${ep.season}E${ep.number} - ${ep.name}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
                         maxLines = 1,

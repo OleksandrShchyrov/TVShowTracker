@@ -4,6 +4,7 @@ import com.oshchyrov.tvshowtracker.domain.model.AppLanguage
 import com.oshchyrov.tvshowtracker.domain.model.AppSettings
 import com.oshchyrov.tvshowtracker.domain.model.ThemeMode
 import com.oshchyrov.tvshowtracker.presentation.base.BaseViewModel
+import kotlinx.coroutines.launch
 
 data class SettingsState(
     val settings: AppSettings = AppSettings(),
@@ -14,16 +15,22 @@ sealed interface SettingsIntent {
     data class SetLanguage(val language: AppLanguage) : SettingsIntent
 }
 
-class SettingsViewModel : BaseViewModel<SettingsState, SettingsIntent>(SettingsState()) {
+class SettingsViewModel(
+    private val settingsStore: SettingsStore,
+) : BaseViewModel<SettingsState, SettingsIntent>(SettingsState(settingsStore.settings.value)) {
+
+    init {
+        scope.launch {
+            settingsStore.settings.collect { settings ->
+                updateState { copy(settings = settings) }
+            }
+        }
+    }
 
     override fun handleIntent(intent: SettingsIntent) {
         when (intent) {
-            is SettingsIntent.SetTheme -> updateState {
-                copy(settings = settings.copy(themeMode = intent.themeMode))
-            }
-            is SettingsIntent.SetLanguage -> updateState {
-                copy(settings = settings.copy(language = intent.language))
-            }
+            is SettingsIntent.SetTheme -> settingsStore.setTheme(intent.themeMode)
+            is SettingsIntent.SetLanguage -> settingsStore.setLanguage(intent.language)
         }
     }
 
@@ -35,4 +42,3 @@ class SettingsViewModel : BaseViewModel<SettingsState, SettingsIntent>(SettingsS
         handleIntent(SettingsIntent.SetLanguage(language))
     }
 }
-

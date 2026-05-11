@@ -185,24 +185,24 @@ class FavoritesViewModelWrapper: ObservableObject {
 }
 
 class SettingsViewModelWrapper: ObservableObject {
-    private let viewModel: SettingsViewModel
+    private let settingsStore: SettingsStore
     private var cancellable: Cancellable?
 
     @Published var themeMode: ThemeMode = .system
     @Published var language: AppLanguage = .english
 
     init() {
-        viewModel = KoinHelpersKt.getSettingsViewModel()
+        settingsStore = KoinHelpersKt.getSettingsStore()
         observe()
     }
 
     private func observe() {
-        cancellable = FlowWrapperKt.wrap(viewModel.state).collect(
+        cancellable = FlowWrapperKt.wrap(settingsStore.settings).collect(
             onEach: { [weak self] state in
-                guard let self = self, let state = state as? SettingsState else { return }
+                guard let self = self, let state = state as? AppSettings else { return }
                 DispatchQueue.main.async {
-                    self.themeMode = state.settings.themeMode
-                    self.language = state.settings.language
+                    self.themeMode = state.themeMode
+                    self.language = state.language
                 }
             },
             onComplete: {},
@@ -211,15 +211,14 @@ class SettingsViewModelWrapper: ObservableObject {
     }
 
     func setTheme(_ mode: ThemeMode) {
-        viewModel.setTheme(themeMode: mode)
+        settingsStore.setTheme(themeMode: mode)
     }
 
     func setLanguage(_ lang: AppLanguage) {
-        viewModel.setLanguage(language: lang)
+        settingsStore.setLanguage(language: lang)
     }
 
     deinit {
         cancellable?.cancel()
-        viewModel.onCleared()
     }
 }
