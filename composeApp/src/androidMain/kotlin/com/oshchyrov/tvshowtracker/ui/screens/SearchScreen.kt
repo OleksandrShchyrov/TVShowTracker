@@ -40,7 +40,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.oshchyrov.tvshowtracker.domain.model.Show
 import com.oshchyrov.tvshowtracker.presentation.search.SearchViewModel
-import com.oshchyrov.tvshowtracker.ui.localization.LocalAppLanguage
 import com.oshchyrov.tvshowtracker.ui.localization.localizedString
 import org.koin.compose.koinInject
 
@@ -51,7 +50,6 @@ fun SearchScreen(
     contentPadding: PaddingValues = PaddingValues(),
     viewModel: SearchViewModel = koinInject(),
 ) {
-    val lang = LocalAppLanguage.current
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {

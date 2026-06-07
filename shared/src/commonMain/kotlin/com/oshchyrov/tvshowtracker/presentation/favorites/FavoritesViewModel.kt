@@ -9,7 +9,6 @@ import com.oshchyrov.tvshowtracker.domain.repository.ShowRepository
 import com.oshchyrov.tvshowtracker.presentation.base.BaseViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 

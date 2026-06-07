@@ -8,6 +8,7 @@ import com.oshchyrov.tvshowtracker.data.local.settings.SettingsStorage
 import io.ktor.client.engine.HttpClientEngineFactory
 import io.ktor.client.engine.okhttp.OkHttp
 import org.koin.dsl.module
+import androidx.core.content.edit
 
 actual val platformModule = module {
     single<HttpClientEngineFactory<*>> { OkHttp }
@@ -30,7 +31,7 @@ private class AndroidSettingsStorage(
     override fun getString(key: String): String? = preferences.getString(key, null)
 
     override fun putString(key: String, value: String) {
-        preferences.edit().putString(key, value).apply()
+        preferences.edit { putString(key, value) }
     }
 
     private companion object {

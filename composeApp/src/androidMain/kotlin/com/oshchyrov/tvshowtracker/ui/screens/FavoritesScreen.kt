@@ -123,16 +123,13 @@ fun FavoritesScreen(
                         items = state.favorites,
                         key = { it.show.id },
                     ) { favorite ->
-                        val dismissState = rememberSwipeToDismissBoxState(
-                            confirmValueChange = { value ->
-                                if (value == SwipeToDismissBoxValue.EndToStart) {
-                                    viewModel.removeFavoriteShow(favorite.show.id)
-                                    true
-                                } else false
-                            }
-                        )
+                        val dismissState = rememberSwipeToDismissBoxState()
+
                         SwipeToDismissBox(
                             state = dismissState,
+                            onDismiss = {
+                                viewModel.removeFavoriteShow(favorite.show.id)
+                            },
                             backgroundContent = {
                                 val color by animateColorAsState(
                                     if (dismissState.targetValue == SwipeToDismissBoxValue.EndToStart)

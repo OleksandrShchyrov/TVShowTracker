@@ -42,17 +42,17 @@ iosApp/                # iOS UI (SwiftUI)
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| UI (Android) | Jetpack Compose + Material 3 |
-| UI (iOS) | SwiftUI |
-| Networking | Ktor Client |
-| Database | Room (Multiplatform) |
-| DI | Koin |
-| Serialization | kotlinx.serialization |
-| Image Loading | Coil 3 (Android), AsyncImage (iOS) |
-| Logging | Napier |
-| Navigation | Type-safe Jetpack Navigation (Android), NavigationStack (iOS) |
+| Layer         | Technology                                                    |
+|---------------|---------------------------------------------------------------|
+| UI (Android)  | Jetpack Compose + Material 3                                  |
+| UI (iOS)      | SwiftUI                                                       |
+| Networking    | Ktor Client                                                   |
+| Database      | Room (Multiplatform)                                          |
+| DI            | Koin                                                          |
+| Serialization | kotlinx.serialization                                         |
+| Image Loading | Coil 3 (Android), AsyncImage (iOS)                            |
+| Logging       | Napier                                                        |
+| Navigation    | Type-safe Jetpack Navigation (Android), NavigationStack (iOS) |
 
 ## API
 

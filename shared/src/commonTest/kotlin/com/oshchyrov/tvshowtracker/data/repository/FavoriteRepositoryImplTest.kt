@@ -1,6 +1,5 @@
 package com.oshchyrov.tvshowtracker.data.repository
 
-import com.oshchyrov.tvshowtracker.data.mapper.toEntity
 import com.oshchyrov.tvshowtracker.test.FakeFavoriteShowDao
 import com.oshchyrov.tvshowtracker.test.FakeWatchedEpisodeDao
 import com.oshchyrov.tvshowtracker.test.testEpisode

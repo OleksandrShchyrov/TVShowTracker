@@ -58,8 +58,6 @@ fun DetailsScreen(
     contentPadding: PaddingValues = PaddingValues(),
     viewModel: DetailsViewModel = koinInject(),
 ) {
-    val lang = LocalAppLanguage.current
-
     LaunchedEffect(showId) {
         viewModel.handleIntent(DetailsIntent.LoadShow(showId))
     }

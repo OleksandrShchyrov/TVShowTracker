@@ -1,7 +1,6 @@
 package com.oshchyrov.tvshowtracker.presentation.details
 
 import com.oshchyrov.tvshowtracker.domain.model.AppError
-import com.oshchyrov.tvshowtracker.domain.model.Outcome
 import com.oshchyrov.tvshowtracker.test.FakeFavoriteRepository
 import com.oshchyrov.tvshowtracker.test.FakeShowRepository
 import com.oshchyrov.tvshowtracker.test.testEpisode
@@ -57,7 +56,7 @@ class DetailsViewModelTest {
 
         val state = viewModel.state.value
         assertNotNull(state.show)
-        assertEquals("Breaking Bad", state.show?.name)
+        assertEquals("Breaking Bad", state.show.name)
         assertFalse(state.isLoading)
         assertEquals(2, state.totalEpisodes)
     }

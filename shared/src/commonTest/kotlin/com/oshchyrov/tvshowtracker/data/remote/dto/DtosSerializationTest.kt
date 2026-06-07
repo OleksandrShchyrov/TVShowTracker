@@ -46,7 +46,7 @@ class DtosSerializationTest {
 
         assertEquals(10, dto.id)
         assertNotNull(dto.image)
-        assertEquals("http://img.jpg", dto.image?.medium)
+        assertEquals("http://img.jpg", dto.image.medium)
     }
 
     @Test
