@@ -1,14 +1,15 @@
 package com.oshchyrov.tvshowtracker.domain.repository
 
 import com.oshchyrov.tvshowtracker.domain.model.Episode
+import com.oshchyrov.tvshowtracker.domain.model.Outcome
 import com.oshchyrov.tvshowtracker.domain.model.Show
 import kotlinx.coroutines.flow.Flow
 
 interface ShowRepository {
-    suspend fun getInitialShows(page: Int = 0): Result<List<Show>>
-    suspend fun searchShows(query: String): Result<List<Show>>
-    suspend fun getShowDetails(showId: Int): Result<Show>
-    suspend fun getEpisodes(showId: Int): Result<List<Episode>>
+    suspend fun getInitialShows(page: Int = 0): Outcome<List<Show>>
+    suspend fun searchShows(query: String): Outcome<List<Show>>
+    suspend fun getShowDetails(showId: Int): Outcome<Show>
+    suspend fun getEpisodes(showId: Int): Outcome<List<Episode>>
 }
 
 interface FavoriteRepository {

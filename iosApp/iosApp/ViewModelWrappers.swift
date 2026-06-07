@@ -1,9 +1,25 @@
 import Foundation
 import Shared
 
-class SearchViewModelWrapper: ObservableObject {
-    private let viewModel: SearchViewModel
-    private var cancellable: Cancellable?
+/// Holds a Kotlin `Cancellable` so `@MainActor` wrappers can stop flow collection from
+/// nonisolated `deinit` under Swift 6 strict concurrency.
+final class FlowSubscription: @unchecked Sendable {
+    nonisolated(unsafe) private var cancellable: (any Cancellable)?
+
+    func set(_ cancellable: any Cancellable) {
+        self.cancellable = cancellable
+    }
+
+    nonisolated func cancel() {
+        cancellable?.cancel()
+        cancellable = nil
+    }
+}
+
+@MainActor
+final class SearchViewModelWrapper: ObservableObject {
+    nonisolated(unsafe) private let viewModel: SearchViewModel
+    private let subscription = FlowSubscription()
 
     @Published var query: String = ""
     @Published var results: [Show] = []
@@ -19,19 +35,21 @@ class SearchViewModelWrapper: ObservableObject {
     }
 
     private func observe() {
-        cancellable = FlowWrapperKt.wrap(viewModel.state).collect(
-            onEach: { [weak self] state in
-                guard let self = self, let state = state as? SearchState else { return }
-                DispatchQueue.main.async {
-                    self.results = state.results
-                    self.isLoading = state.isLoading
-                    self.error = state.error
-                    self.isEmpty = state.isEmpty
-                    self.isInitialContent = state.isInitialContent
-                }
-            },
-            onComplete: {},
-            onError: { _ in }
+        subscription.set(
+            FlowWrapperKt.wrap(viewModel.state).collect(
+                onEach: { [weak self] state in
+                    guard let self, let state = state as? SearchState else { return }
+                    Task { @MainActor in
+                        self.results = state.results
+                        self.isLoading = state.isLoading
+                        self.error = state.error
+                        self.isEmpty = state.isEmpty
+                        self.isInitialContent = state.isInitialContent
+                    }
+                },
+                onComplete: {},
+                onError: { _ in }
+            )
         )
     }
 
@@ -44,14 +62,15 @@ class SearchViewModelWrapper: ObservableObject {
     }
 
     deinit {
-        cancellable?.cancel()
-        viewModel.onCleared()
+        subscription.cancel()
+        viewModel.clear()
     }
 }
 
-class DetailsViewModelWrapper: ObservableObject {
-    private let viewModel: DetailsViewModel
-    private var cancellable: Cancellable?
+@MainActor
+final class DetailsViewModelWrapper: ObservableObject {
+    nonisolated(unsafe) private let viewModel: DetailsViewModel
+    private let subscription = FlowSubscription()
 
     @Published var show: Show? = nil
     @Published var isFavorite: Bool = false
@@ -66,19 +85,21 @@ class DetailsViewModelWrapper: ObservableObject {
     }
 
     private func observe() {
-        cancellable = FlowWrapperKt.wrap(viewModel.state).collect(
-            onEach: { [weak self] state in
-                guard let self = self, let state = state as? DetailsState else { return }
-                DispatchQueue.main.async {
-                    self.show = state.show
-                    self.isFavorite = state.isFavorite
-                    self.isLoading = state.isLoading
-                    self.watchedCount = Int(state.watchedCount)
-                    self.totalEpisodes = Int(state.totalEpisodes)
-                }
-            },
-            onComplete: {},
-            onError: { _ in }
+        subscription.set(
+            FlowWrapperKt.wrap(viewModel.state).collect(
+                onEach: { [weak self] state in
+                    guard let self, let state = state as? DetailsState else { return }
+                    Task { @MainActor in
+                        self.show = state.show
+                        self.isFavorite = state.isFavorite
+                        self.isLoading = state.isLoading
+                        self.watchedCount = Int(state.watchedCount)
+                        self.totalEpisodes = Int(state.totalEpisodes)
+                    }
+                },
+                onComplete: {},
+                onError: { _ in }
+            )
         )
     }
 
@@ -87,14 +108,15 @@ class DetailsViewModelWrapper: ObservableObject {
     }
 
     deinit {
-        cancellable?.cancel()
-        viewModel.onCleared()
+        subscription.cancel()
+        viewModel.clear()
     }
 }
 
-class EpisodesViewModelWrapper: ObservableObject {
-    private let viewModel: EpisodesViewModel
-    private var cancellable: Cancellable?
+@MainActor
+final class EpisodesViewModelWrapper: ObservableObject {
+    nonisolated(unsafe) private let viewModel: EpisodesViewModel
+    private let subscription = FlowSubscription()
 
     @Published var seasons: [Season] = []
     @Published var isLoading: Bool = true
@@ -106,16 +128,18 @@ class EpisodesViewModelWrapper: ObservableObject {
     }
 
     private func observe() {
-        cancellable = FlowWrapperKt.wrap(viewModel.state).collect(
-            onEach: { [weak self] state in
-                guard let self = self, let state = state as? EpisodesState else { return }
-                DispatchQueue.main.async {
-                    self.seasons = state.seasons
-                    self.isLoading = state.isLoading
-                }
-            },
-            onComplete: {},
-            onError: { _ in }
+        subscription.set(
+            FlowWrapperKt.wrap(viewModel.state).collect(
+                onEach: { [weak self] state in
+                    guard let self, let state = state as? EpisodesState else { return }
+                    Task { @MainActor in
+                        self.seasons = state.seasons
+                        self.isLoading = state.isLoading
+                    }
+                },
+                onComplete: {},
+                onError: { _ in }
+            )
         )
     }
 
@@ -136,14 +160,15 @@ class EpisodesViewModelWrapper: ObservableObject {
     }
 
     deinit {
-        cancellable?.cancel()
-        viewModel.onCleared()
+        subscription.cancel()
+        viewModel.clear()
     }
 }
 
-class FavoritesViewModelWrapper: ObservableObject {
-    private let viewModel: FavoritesViewModel
-    private var cancellable: Cancellable?
+@MainActor
+final class FavoritesViewModelWrapper: ObservableObject {
+    nonisolated(unsafe) private let viewModel: FavoritesViewModel
+    private let subscription = FlowSubscription()
 
     @Published var favorites: [FavoriteShow] = []
     @Published var isLoading: Bool = true
@@ -156,17 +181,19 @@ class FavoritesViewModelWrapper: ObservableObject {
     }
 
     private func observe() {
-        cancellable = FlowWrapperKt.wrap(viewModel.state).collect(
-            onEach: { [weak self] state in
-                guard let self = self, let state = state as? FavoritesState else { return }
-                DispatchQueue.main.async {
-                    self.favorites = state.favorites
-                    self.isLoading = state.isLoading
-                    self.isEmpty = state.isEmpty
-                }
-            },
-            onComplete: {},
-            onError: { _ in }
+        subscription.set(
+            FlowWrapperKt.wrap(viewModel.state).collect(
+                onEach: { [weak self] state in
+                    guard let self, let state = state as? FavoritesState else { return }
+                    Task { @MainActor in
+                        self.favorites = state.favorites
+                        self.isLoading = state.isLoading
+                        self.isEmpty = state.isEmpty
+                    }
+                },
+                onComplete: {},
+                onError: { _ in }
+            )
         )
     }
 
@@ -179,14 +206,15 @@ class FavoritesViewModelWrapper: ObservableObject {
     }
 
     deinit {
-        cancellable?.cancel()
-        viewModel.onCleared()
+        subscription.cancel()
+        viewModel.clear()
     }
 }
 
-class SettingsViewModelWrapper: ObservableObject {
-    private let settingsStore: SettingsStore
-    private var cancellable: Cancellable?
+@MainActor
+final class SettingsViewModelWrapper: ObservableObject {
+    nonisolated(unsafe) private let settingsStore: SettingsStore
+    private let subscription = FlowSubscription()
 
     @Published var themeMode: ThemeMode = .system
     @Published var language: AppLanguage = .english
@@ -197,16 +225,18 @@ class SettingsViewModelWrapper: ObservableObject {
     }
 
     private func observe() {
-        cancellable = FlowWrapperKt.wrap(settingsStore.settings).collect(
-            onEach: { [weak self] state in
-                guard let self = self, let state = state as? AppSettings else { return }
-                DispatchQueue.main.async {
-                    self.themeMode = state.themeMode
-                    self.language = state.language
-                }
-            },
-            onComplete: {},
-            onError: { _ in }
+        subscription.set(
+            FlowWrapperKt.wrap(settingsStore.settings).collect(
+                onEach: { [weak self] state in
+                    guard let self, let state = state as? AppSettings else { return }
+                    Task { @MainActor in
+                        self.themeMode = state.themeMode
+                        self.language = state.language
+                    }
+                },
+                onComplete: {},
+                onError: { _ in }
+            )
         )
     }
 
@@ -219,6 +249,6 @@ class SettingsViewModelWrapper: ObservableObject {
     }
 
     deinit {
-        cancellable?.cancel()
+        subscription.cancel()
     }
 }

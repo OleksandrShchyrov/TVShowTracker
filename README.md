@@ -4,7 +4,17 @@ A cross-platform mobile application built with Kotlin Multiplatform for tracking
 
 ## Architecture
 
-**Pattern:** MVI (Model-View-Intent) with custom ViewModels in the shared module.
+**Pattern:** MVI (Model-View-Intent) with shared lifecycle-aware ViewModels.
+
+```mermaid
+flowchart LR
+    Android[Compose Android] --> SharedPresentation[shared:presentation]
+    iOS[SwiftUI iOS] --> SharedPresentation
+    SharedPresentation --> Domain[shared:domain]
+    Domain --> Data[shared:data]
+    Data --> Room[(Room)]
+    Data --> TVmaze[TVmaze HTTPS API]
+```
 
 **Structure:**
 ```
@@ -18,7 +28,7 @@ shared/
 │   ├── model/         # Domain models (Show, Episode, Season, FavoriteShow)
 │   └── repository/    # Repository interfaces
 ├── presentation/
-│   ├── base/          # BaseViewModel (MVI store)
+│   ├── base/          # Lifecycle-backed MVI store
 │   ├── search/        # SearchViewModel + State/Intent
 │   ├── details/       # DetailsViewModel + State/Intent
 │   ├── episodes/      # EpisodesViewModel + State/Intent
@@ -42,11 +52,11 @@ iosApp/                # iOS UI (SwiftUI)
 | Serialization | kotlinx.serialization |
 | Image Loading | Coil 3 (Android), AsyncImage (iOS) |
 | Logging | Napier |
-| Navigation | Jetpack Navigation (Android), NavigationStack (iOS) |
+| Navigation | Type-safe Jetpack Navigation (Android), NavigationStack (iOS) |
 
 ## API
 
-Uses [TVmaze API](https://www.tvmaze.com/api) (free public REST API):
+Uses [TVmaze API](https://www.tvmaze.com/api) over HTTPS (free public REST API):
 - `GET /search/shows?q={query}` - Search shows
 - `GET /shows/{id}` - Show details
 - `GET /shows/{id}/episodes` - Episode list
@@ -82,7 +92,7 @@ Uses [TVmaze API](https://www.tvmaze.com/api) (free public REST API):
 - Familiar API for Android developers
 - Handles schema migrations
 
-## Testing Strategy
+## Verification
 
 ### What is tested:
 - **Mapper logic** - DTO to domain model conversions, HTML stripping, null handling
@@ -95,9 +105,11 @@ Uses [TVmaze API](https://www.tvmaze.com/api) (free public REST API):
 - **Ktor API calls** - Would require mock server setup (e.g., MockWebServer)
 - **iOS SwiftUI** - No XCTest configured for this project
 
-### Running tests:
 ```bash
+./gradlew :shared:compileKotlinMetadata
 ./gradlew :shared:testDebugUnitTest
+./gradlew :composeApp:assembleDebug
+./gradlew :shared:linkDebugFrameworkIosSimulatorArm64
 ```
 
 ## Building
@@ -115,7 +127,14 @@ Open `iosApp/iosApp.xcodeproj` in Xcode and build, or:
 
 ## Requirements
 
-- JDK 11+
+- JDK 17+
 - Android Studio / IntelliJ IDEA
 - Xcode 15+ (for iOS)
 - Kotlin 2.3.21
+
+## Architecture Decisions
+
+- `docs/adr/ADR-001-kmp-mvi.md`
+- `docs/adr/ADR-002-network-bound-resource.md`
+- `docs/adr/ADR-003-ios-flow-interop.md`
+- `docs/adr/ADR-004-type-safe-navigation.md`

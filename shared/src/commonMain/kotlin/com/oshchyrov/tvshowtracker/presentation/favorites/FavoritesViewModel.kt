@@ -2,6 +2,7 @@ package com.oshchyrov.tvshowtracker.presentation.favorites
 
 import com.oshchyrov.tvshowtracker.domain.model.Episode
 import com.oshchyrov.tvshowtracker.domain.model.FavoriteShow
+import com.oshchyrov.tvshowtracker.domain.model.Outcome
 import com.oshchyrov.tvshowtracker.domain.model.Show
 import com.oshchyrov.tvshowtracker.domain.repository.FavoriteRepository
 import com.oshchyrov.tvshowtracker.domain.repository.ShowRepository
@@ -75,7 +76,10 @@ class FavoritesViewModel(
     }
 
     private suspend fun calculateNextUnwatched(showId: Int): Episode? {
-        val episodes = showRepository.getEpisodes(showId).getOrNull() ?: return null
+        val episodes = when (val result = showRepository.getEpisodes(showId)) {
+            is Outcome.Success -> result.value
+            is Outcome.Failure -> return null
+        }
         val watchedSet = favoriteRepository.getWatchedEpisodeIds(showId).first()
         return episodes
             .sortedWith(compareBy({ it.season }, { it.number }))

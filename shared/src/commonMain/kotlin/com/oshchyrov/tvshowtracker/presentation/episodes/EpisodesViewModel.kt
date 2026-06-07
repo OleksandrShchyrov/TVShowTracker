@@ -1,7 +1,9 @@
 package com.oshchyrov.tvshowtracker.presentation.episodes
 
 import com.oshchyrov.tvshowtracker.domain.model.Episode
+import com.oshchyrov.tvshowtracker.domain.model.Outcome
 import com.oshchyrov.tvshowtracker.domain.model.Season
+import com.oshchyrov.tvshowtracker.domain.model.userMessage
 import com.oshchyrov.tvshowtracker.domain.repository.FavoriteRepository
 import com.oshchyrov.tvshowtracker.domain.repository.ShowRepository
 import com.oshchyrov.tvshowtracker.presentation.base.BaseViewModel
@@ -52,14 +54,16 @@ class EpisodesViewModel(
         showId = id
         scope.launch {
             updateState { copy(isLoading = true, error = null) }
-            showRepository.getEpisodes(id)
-                .onSuccess { episodes ->
+            when (val result = showRepository.getEpisodes(id)) {
+                is Outcome.Success -> {
+                    val episodes = result.value
                     allEpisodes = episodes
                     updateState { copy(isLoading = false) }
                 }
-                .onFailure { e ->
-                    updateState { copy(isLoading = false, error = e.message) }
+                is Outcome.Failure -> {
+                    updateState { copy(isLoading = false, error = result.error.userMessage()) }
                 }
+            }
         }
         scope.launch {
             favoriteRepository.getWatchedEpisodeIds(id).collectLatest { watchedIds ->

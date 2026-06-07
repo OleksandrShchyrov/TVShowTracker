@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.kotlinxSerialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
+    alias(libs.plugins.kover)
 }
 
 kotlin {
@@ -33,6 +34,7 @@ kotlin {
             implementation(libs.ktor.serialization.json)
             implementation(libs.ktor.client.logging)
             implementation(libs.koin.core)
+            implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.room.runtime)
             implementation(libs.sqlite.bundled)
             implementation(libs.napier)
@@ -51,6 +53,10 @@ kotlin {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
             implementation(libs.turbine)
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.serialization.json)
+            implementation(libs.ktor.client.mock)
         }
     }
 }
@@ -76,4 +82,28 @@ dependencies {
     add("kspIosArm64", libs.room.compiler)
     add("kspIosSimulatorArm64", libs.room.compiler)
     add("kspIosX64", libs.room.compiler)
+}
+
+kover {
+    reports {
+        filters {
+            excludes {
+                packages(
+                    "com.oshchyrov.tvshowtracker.di",
+                    "com.oshchyrov.tvshowtracker.data.local.dao",
+                    "com.oshchyrov.tvshowtracker.data.local.db",
+                )
+            }
+        }
+        verify {
+            rule {
+                minBound(80)
+            }
+        }
+        total {
+            html {
+                onCheck = true
+            }
+        }
+    }
 }

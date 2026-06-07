@@ -11,20 +11,25 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavDestination
 import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
+import androidx.navigation.toRoute
 import com.oshchyrov.tvshowtracker.presentation.settings.SettingsStore
 import com.oshchyrov.tvshowtracker.ui.localization.LocalAppLanguage
 import com.oshchyrov.tvshowtracker.ui.localization.localizedString
+import com.oshchyrov.tvshowtracker.ui.navigation.DetailsRoute
+import com.oshchyrov.tvshowtracker.ui.navigation.EpisodesRoute
+import com.oshchyrov.tvshowtracker.ui.navigation.FavoritesRoute
+import com.oshchyrov.tvshowtracker.ui.navigation.SearchRoute
+import com.oshchyrov.tvshowtracker.ui.navigation.SettingsRoute
 import com.oshchyrov.tvshowtracker.ui.screens.DetailsScreen
 import com.oshchyrov.tvshowtracker.ui.screens.EpisodesScreen
 import com.oshchyrov.tvshowtracker.ui.screens.FavoritesScreen
@@ -36,36 +41,38 @@ import org.koin.compose.koinInject
 @Composable
 fun TVShowTrackerApp() {
     val settingsStore: SettingsStore = koinInject()
-    val settings by settingsStore.settings.collectAsState()
+    val settings by settingsStore.settings.collectAsStateWithLifecycle()
 
     TVShowTrackerTheme(themeMode = settings.themeMode) {
         val navController = rememberNavController()
         val navBackStackEntry by navController.currentBackStackEntryAsState()
-        val currentRoute = navBackStackEntry?.destination?.route
-        val topLevelRoutes = remember { listOf("search", "favorites", "settings") }
+        val currentDestination = navBackStackEntry?.destination
+        val topLevelRoutes = remember {
+            listOf(TopLevelRoute.Search, TopLevelRoute.Favorites, TopLevelRoute.Settings)
+        }
 
-        val showBottomBar = currentRoute in topLevelRoutes
+        val showBottomBar = topLevelRoutes.any { it.matches(currentDestination) }
 
         CompositionLocalProvider(LocalAppLanguage provides settings.language) {
             Scaffold(
                 bottomBar = {
                     if (showBottomBar) {
                         NavigationBar {
-                            topLevelRoutes.forEach { route ->
+                            topLevelRoutes.forEach { destination ->
                                 NavigationBarItem(
                                     icon = {
-                                        when (route) {
-                                            "search" -> Icon(
+                                        when (destination) {
+                                            TopLevelRoute.Search -> Icon(
                                                 Icons.Default.Search,
                                                 contentDescription = null
                                             )
 
-                                            "favorites" -> Icon(
+                                            TopLevelRoute.Favorites -> Icon(
                                                 Icons.Default.Favorite,
                                                 contentDescription = null
                                             )
 
-                                            else -> Icon(
+                                            TopLevelRoute.Settings -> Icon(
                                                 Icons.Default.Settings,
                                                 contentDescription = null
                                             )
@@ -73,16 +80,12 @@ fun TVShowTrackerApp() {
                                     },
                                     label = {
                                         Text(
-                                            when (route) {
-                                                "search" -> localizedString("search_shows")
-                                                "favorites" -> localizedString("my_shows")
-                                                else -> localizedString("settings")
-                                            }
+                                            localizedString(destination.labelKey)
                                         )
                                     },
-                                    selected = currentRoute == route,
+                                    selected = destination.matches(currentDestination),
                                     onClick = {
-                                        navController.navigate(route) {
+                                        navController.navigate(destination.route) {
                                             launchSingleTop = true
                                             restoreState = true
                                             popUpTo(navController.graph.findStartDestination().id) {
@@ -98,47 +101,67 @@ fun TVShowTrackerApp() {
             ) { innerPadding ->
                 NavHost(
                     navController = navController,
-                    startDestination = "search",
+                    startDestination = SearchRoute,
                     modifier = Modifier,
                 ) {
-                    composable("search") {
+                    composable<SearchRoute> {
                         SearchScreen(
-                            onShowClick = { showId -> navController.navigate("details/$showId") },
+                            onShowClick = { showId -> navController.navigate(DetailsRoute(showId)) },
                             contentPadding = innerPadding,
                         )
                     }
-                    composable("favorites") {
+                    composable<FavoritesRoute> {
                         FavoritesScreen(
-                            onShowClick = { showId -> navController.navigate("details/$showId") },
+                            onShowClick = { showId -> navController.navigate(DetailsRoute(showId)) },
                             contentPadding = innerPadding,
                         )
                     }
-                    composable("settings") {
+                    composable<SettingsRoute> {
                         SettingsScreen(contentPadding = innerPadding)
                     }
-                    composable(
-                        "details/{showId}",
-                        arguments = listOf(navArgument("showId") { type = NavType.IntType })
-                    ) { backStackEntry ->
-                        val showId = backStackEntry.arguments?.getInt("showId") ?: return@composable
+                    composable<DetailsRoute> { backStackEntry ->
+                        val route = backStackEntry.toRoute<DetailsRoute>()
                         DetailsScreen(
-                            showId = showId,
-                            onEpisodesClick = { navController.navigate("episodes/$showId") },
+                            showId = route.showId,
+                            onEpisodesClick = { navController.navigate(EpisodesRoute(route.showId)) },
                             onBackClick = { navController.popBackStack() },
+                            contentPadding = innerPadding,
                         )
                     }
-                    composable(
-                        "episodes/{showId}",
-                        arguments = listOf(navArgument("showId") { type = NavType.IntType })
-                    ) { backStackEntry ->
-                        val showId = backStackEntry.arguments?.getInt("showId") ?: return@composable
+                    composable<EpisodesRoute> { backStackEntry ->
+                        val route = backStackEntry.toRoute<EpisodesRoute>()
                         EpisodesScreen(
-                            showId = showId,
+                            showId = route.showId,
                             onBackClick = { navController.popBackStack() },
+                            contentPadding = innerPadding,
                         )
                     }
                 }
             }
         }
     }
+}
+
+private sealed class TopLevelRoute(
+    val route: Any,
+    private val routeName: String,
+    val labelKey: String,
+) {
+    data object Search : TopLevelRoute(
+        route = SearchRoute,
+        routeName = "com.oshchyrov.tvshowtracker.ui.navigation.SearchRoute",
+        labelKey = "search_shows",
+    )
+    data object Favorites : TopLevelRoute(
+        route = FavoritesRoute,
+        routeName = "com.oshchyrov.tvshowtracker.ui.navigation.FavoritesRoute",
+        labelKey = "my_shows",
+    )
+    data object Settings : TopLevelRoute(
+        route = SettingsRoute,
+        routeName = "com.oshchyrov.tvshowtracker.ui.navigation.SettingsRoute",
+        labelKey = "settings",
+    )
+
+    fun matches(destination: NavDestination?): Boolean = destination?.route == routeName
 }

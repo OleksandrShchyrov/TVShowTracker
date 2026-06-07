@@ -1,8 +1,7 @@
 package com.oshchyrov.tvshowtracker.presentation.search
 
-import com.oshchyrov.tvshowtracker.domain.model.Show
-import com.oshchyrov.tvshowtracker.domain.repository.ShowRepository
-import com.oshchyrov.tvshowtracker.domain.model.Episode
+import com.oshchyrov.tvshowtracker.test.FakeShowRepository
+import com.oshchyrov.tvshowtracker.test.testShow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.*
@@ -23,7 +22,7 @@ class SearchViewModelTest {
 
     @AfterTest
     fun tearDown() {
-        viewModel.onCleared()
+        viewModel.clear()
         Dispatchers.resetMain()
     }
 
@@ -59,7 +58,7 @@ class SearchViewModelTest {
     fun searchReturnsResults() = runTest {
         fakeRepository.showsToReturn = listOf(testShow(1, "Breaking Bad"))
         viewModel.handleIntent(SearchIntent.QueryChanged("breaking"))
-        advanceTimeBy(500) // debounce
+        advanceTimeBy(500)
         advanceUntilIdle()
         val state = viewModel.state.value
         assertFalse(state.isLoading)
@@ -79,45 +78,30 @@ class SearchViewModelTest {
     }
 
     @Test
-    fun emptyQueryClearsResults() = runTest {
-        fakeRepository.showsToReturn = listOf(testShow(1, "Test"))
+    fun emptyQueryReloadsInitialShows() = runTest {
+        fakeRepository.initialShowsToReturn = listOf(testShow(1, "Browse Show"))
+        fakeRepository.showsToReturn = listOf(testShow(2, "Search Show"))
         viewModel.handleIntent(SearchIntent.QueryChanged("test"))
         advanceTimeBy(500)
         advanceUntilIdle()
         viewModel.handleIntent(SearchIntent.QueryChanged(""))
         advanceUntilIdle()
-        assertTrue(viewModel.state.value.results.isEmpty())
+        assertEquals("Browse Show", viewModel.state.value.results[0].name)
+    }
+
+    @Test
+    fun retryReloadsAfterFailure() = runTest {
+        fakeRepository.shouldFail = true
+        viewModel.loadInitialShows()
+        advanceUntilIdle()
+        assertNotNull(viewModel.state.value.error)
+
+        fakeRepository.shouldFail = false
+        fakeRepository.initialShowsToReturn = listOf(testShow(1, "Recovered"))
+        viewModel.retrySearch()
+        advanceUntilIdle()
+
+        assertNull(viewModel.state.value.error)
+        assertEquals("Recovered", viewModel.state.value.results[0].name)
     }
 }
-
-private fun testShow(id: Int, name: String) = Show(
-    id = id, name = name, summary = null, imageUrl = null, imageMediumUrl = null,
-    genres = emptyList(), rating = null, runtime = null, language = null,
-    status = null, premiered = null, network = null, webChannel = null, officialSite = null,
-)
-
-class FakeShowRepository : ShowRepository {
-    var initialShowsToReturn: List<Show> = emptyList()
-    var showsToReturn: List<Show> = emptyList()
-    var shouldFail = false
-
-    override suspend fun getInitialShows(page: Int): Result<List<Show>> {
-        return if (shouldFail) Result.failure(RuntimeException("Network error"))
-        else Result.success(initialShowsToReturn)
-    }
-
-    override suspend fun searchShows(query: String): Result<List<Show>> {
-        return if (shouldFail) Result.failure(RuntimeException("Network error"))
-        else Result.success(showsToReturn)
-    }
-
-    override suspend fun getShowDetails(showId: Int): Result<Show> {
-        return showsToReturn.find { it.id == showId }?.let { Result.success(it) }
-            ?: Result.failure(RuntimeException("Not found"))
-    }
-
-    override suspend fun getEpisodes(showId: Int): Result<List<Episode>> {
-        return Result.success(emptyList())
-    }
-}
-

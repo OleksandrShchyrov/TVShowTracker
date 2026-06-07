@@ -1,5 +1,7 @@
 package com.oshchyrov.tvshowtracker.presentation.details
 
+import com.oshchyrov.tvshowtracker.domain.model.Outcome
+import com.oshchyrov.tvshowtracker.domain.model.userMessage
 import com.oshchyrov.tvshowtracker.domain.repository.FavoriteRepository
 import com.oshchyrov.tvshowtracker.domain.repository.ShowRepository
 import com.oshchyrov.tvshowtracker.presentation.base.BaseViewModel
@@ -32,14 +34,16 @@ class DetailsViewModel(
         showId = id
         scope.launch {
             updateState { copy(isLoading = true, error = null) }
-            showRepository.getShowDetails(id)
-                .onSuccess { show ->
+            when (val result = showRepository.getShowDetails(id)) {
+                is Outcome.Success -> {
+                    val show = result.value
                     updateState { copy(show = show, isLoading = false) }
                     loadEpisodeCount(id)
                 }
-                .onFailure { e ->
-                    updateState { copy(isLoading = false, error = e.message) }
+                is Outcome.Failure -> {
+                    updateState { copy(isLoading = false, error = result.error.userMessage()) }
                 }
+            }
         }
         scope.launch {
             favoriteRepository.isFavorite(id).collectLatest { isFav ->
@@ -55,8 +59,9 @@ class DetailsViewModel(
 
     private fun loadEpisodeCount(id: Int) {
         scope.launch {
-            showRepository.getEpisodes(id).onSuccess { episodes ->
-                updateState { copy(totalEpisodes = episodes.size) }
+            when (val result = showRepository.getEpisodes(id)) {
+                is Outcome.Success -> updateState { copy(totalEpisodes = result.value.size) }
+                is Outcome.Failure -> updateState { copy(error = result.error.userMessage()) }
             }
         }
     }

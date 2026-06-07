@@ -1,6 +1,8 @@
 package com.oshchyrov.tvshowtracker.di
 
+import com.oshchyrov.tvshowtracker.data.logging.NapierLogger
 import com.oshchyrov.tvshowtracker.data.remote.api.TvMazeApi
+import com.oshchyrov.tvshowtracker.domain.logging.Logger
 import com.oshchyrov.tvshowtracker.data.repository.FavoriteRepositoryImpl
 import com.oshchyrov.tvshowtracker.data.repository.ShowRepositoryImpl
 import com.oshchyrov.tvshowtracker.domain.repository.FavoriteRepository
@@ -25,6 +27,7 @@ val commonModule = module {
     single {
         val engineFactory: HttpClientEngineFactory<*> = get()
         HttpClient(engineFactory) {
+            expectSuccess = true
             install(ContentNegotiation) {
                 json(Json {
                     ignoreUnknownKeys = true
@@ -42,7 +45,8 @@ val commonModule = module {
     single { get<com.oshchyrov.tvshowtracker.data.local.db.AppDatabase>().favoriteShowDao() }
     single { get<com.oshchyrov.tvshowtracker.data.local.db.AppDatabase>().watchedEpisodeDao() }
 
-    single<ShowRepository> { ShowRepositoryImpl(get()) }
+    single<Logger> { NapierLogger() }
+    single<ShowRepository> { ShowRepositoryImpl(get(), get()) }
     single<FavoriteRepository> { FavoriteRepositoryImpl(get(), get()) }
 
     factory { SearchViewModel(get()) }

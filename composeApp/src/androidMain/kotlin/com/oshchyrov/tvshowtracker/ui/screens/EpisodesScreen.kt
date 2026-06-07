@@ -29,7 +29,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,6 +36,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.oshchyrov.tvshowtracker.domain.model.AppLanguage
 import com.oshchyrov.tvshowtracker.domain.model.Episode
@@ -53,6 +53,7 @@ import org.koin.compose.koinInject
 fun EpisodesScreen(
     showId: Int,
     onBackClick: () -> Unit,
+    contentPadding: PaddingValues = PaddingValues(),
     viewModel: EpisodesViewModel = koinInject(),
 ) {
     val lang = LocalAppLanguage.current
@@ -61,7 +62,7 @@ fun EpisodesScreen(
         viewModel.handleIntent(EpisodesIntent.LoadEpisodes(showId))
     }
 
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -100,7 +101,12 @@ fun EpisodesScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(padding),
-                    contentPadding = PaddingValues(16.dp),
+                    contentPadding = PaddingValues(
+                        start = 16.dp,
+                        top = 16.dp,
+                        end = 16.dp,
+                        bottom = 16.dp + contentPadding.calculateBottomPadding(),
+                    ),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     state.seasons.forEach { season ->

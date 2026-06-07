@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Compile shared metadata
+        run: ./gradlew :shared:compileKotlinMetadata
+      - name: Run shared unit tests
+        run: ./gradlew :shared:testDebugUnitTest :shared:koverVerify
+      - name: Assemble Android debug
+        run: ./gradlew :composeApp:assembleDebug
+
+  ios-framework:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Link iOS simulator framework
+        run: ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64
+      - name: Build iOS app
+        run: xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -destination 'generic/platform=iOS Simulator' build

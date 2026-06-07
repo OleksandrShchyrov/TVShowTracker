@@ -1,5 +1,7 @@
 package com.oshchyrov.tvshowtracker.presentation.search
 
+import com.oshchyrov.tvshowtracker.domain.model.Outcome
+import com.oshchyrov.tvshowtracker.domain.model.userMessage
 import com.oshchyrov.tvshowtracker.domain.repository.ShowRepository
 import com.oshchyrov.tvshowtracker.presentation.base.BaseViewModel
 import kotlinx.coroutines.Job
@@ -22,8 +24,9 @@ class SearchViewModel(
     fun loadInitialShows() {
         scope.launch {
             updateState { copy(isLoading = true, error = null, isEmpty = false) }
-            showRepository.getInitialShows()
-                .onSuccess { shows ->
+            when (val result = showRepository.getInitialShows()) {
+                is Outcome.Success -> {
+                    val shows = result.value
                     updateState {
                         copy(
                             results = shows,
@@ -33,15 +36,16 @@ class SearchViewModel(
                         )
                     }
                 }
-                .onFailure { e ->
+                is Outcome.Failure -> {
                     updateState {
                         copy(
                             isLoading = false,
-                            error = e.message ?: "Unable to load shows",
+                            error = result.error.userMessage(),
                             isInitialContent = true,
                         )
                     }
                 }
+            }
         }
     }
 
@@ -78,8 +82,9 @@ class SearchViewModel(
         if (query.isBlank()) return
         scope.launch {
             updateState { copy(isLoading = true, error = null, isInitialContent = false) }
-            showRepository.searchShows(query)
-                .onSuccess { shows ->
+            when (val result = showRepository.searchShows(query)) {
+                is Outcome.Success -> {
+                    val shows = result.value
                     updateState {
                         copy(
                             results = shows,
@@ -89,9 +94,10 @@ class SearchViewModel(
                         )
                     }
                 }
-                .onFailure { e ->
-                    updateState { copy(isLoading = false, error = e.message ?: "Unknown error", isInitialContent = false) }
+                is Outcome.Failure -> {
+                    updateState { copy(isLoading = false, error = result.error.userMessage(), isInitialContent = false) }
                 }
+            }
         }
     }
 }
